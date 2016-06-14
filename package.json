@@ -1,0 +1,24 @@
+{
+  "name": "ccjmne-busy",
+  "version": "0.9.0-BETA",
+  "description": "An Angular module offering a collection of directives and other tools to let your application handle its literal business.",
+  "main": "dist/ccjmne-busy.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ccjmne/ccjmne-busy.git"
+  },
+  "keywords": [
+    "angular",
+    "busy",
+    "directive"
+  ],
+  "author": "ccjmne",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ccjmne/ccjmne-busy/issues"
+  },
+  "homepage": "https://github.com/ccjmne/ccjmne-busy#readme"
+}
