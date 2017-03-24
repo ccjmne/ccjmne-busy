@@ -29,6 +29,9 @@
         </div>  \
         <div ng-transclude ng-show="!busy"></div>'
       );
+      $templateCache.put('ccjmne-busy-hide_tmpl.html',
+        '<div ng-transclude ng-show="!busy"></div>'
+      );
     }])
     .factory('BusySvc', function () {
       var state = { global: { count: 0, detached: false } };
@@ -125,6 +128,19 @@
         }
       };
     }])
+    .directive('busyHide', ['BusySvc', function (busySvc) {
+      return {
+        restrict: 'EA',
+        transclude: true,
+        templateUrl: 'ccjmne-busy-hide_tmpl.html',
+        link: function (scope, element, attrs) {
+          element.on('$destroy', busySvc.register(function (busy) {
+            scope.busy = busy;
+            setTimeout(function () { scope.$digest(); }, 0);
+          }, attrs.busy || attrs.busyTask));
+        }
+      };
+    }])
     .directive('busyWatch', ['BusySvc', function (busySvc) {
       return {
         restrict: 'EA',
@@ -137,7 +153,7 @@
         }
       };
     }])
-    .directive('busyText', ['BusySvc', function (busySvc) {
+    .directive('busyText', ['BusySvc', '$compile', function (busySvc, $compile) {
       return {
         restrict: 'A',
         link: function (scope, element, attrs) {
@@ -147,7 +163,7 @@
               previousText = element.html();
               element.text(attrs.busyText);
             } else {
-              element.html(previousText || element.html());
+              element.html($compile(previousText || element.contents())(scope));
             }
 
             setTimeout(function () { scope.$digest(); }, 0);
@@ -155,7 +171,7 @@
         }
       };
     }])
-    .directive('busyHtml', ['BusySvc', function (busySvc) {
+    .directive('busyHtml', ['BusySvc', '$compile', function (busySvc, $compile) {
       return {
         restrict: 'A',
         link: function (scope, element, attrs) {
@@ -165,7 +181,7 @@
               previousText = element.html();
             }
 
-            element.html(busy ? attrs.busyHtml : previousText || element.html());
+            element.html($compile(busy ? attrs.busyHtml : previousText || element.contents())(scope));
             setTimeout(function () { scope.$digest(); }, 0);
           }, attrs.busyTask));
         }
