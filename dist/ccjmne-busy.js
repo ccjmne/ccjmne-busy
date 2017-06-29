@@ -34,82 +34,88 @@
       );
     }])
     .factory('BusySvc', function () {
-      var state = { global: { count: 0, detached: false } };
-      var listeners = {};
+      this.state = { global: { count: 0, detached: false } };
+      this.listeners = {};
+      var self = this;
 
-      function notify(task) {
-        (listeners[task] || []).forEach(function (callback) {
-          callback(state[task].count > 0, function () {
-            if (listeners[task].indexOf(callback) !== -1) {
-              listeners[task].splice(listeners[task].indexOf(callback), 1);
+      this.notify = function (task) {
+        (self.listeners[task] || []).slice(0).forEach(function (callback) {
+          callback(self.state[task].count > 0, function off() {
+            if (self.listeners[task].indexOf(callback) !== -1) {
+              self.listeners[task].splice(self.listeners[task].indexOf(callback), 1);
             }
           });
         });
-      }
+      };
 
-      return {
+      return this.api = {
         register: function (callback, task) {
           task = task ? task : 'global';
-          if (listeners[task]) {
-            listeners[task].push(callback);
+          if (self.listeners[task]) {
+            self.listeners[task].push(callback);
           } else {
-            listeners[task] = [callback];
+            self.listeners[task] = [callback];
           }
 
-          callback(state[task] && state[task].count > 0, function () {
-            if (listeners[task].indexOf(callback) > 0) {
-              listeners[task].splice(listeners[task].indexOf(callback), 1);
+          function off() {
+            if (self.listeners[task].indexOf(callback) !== -1) {
+              self.listeners[task].splice(self.listeners[task].indexOf(callback), 1);
             }
-          });
+          }
 
-          return function () {
-            if (listeners[task].indexOf(callback) !== -1) {
-              listeners[task].splice(listeners[task].indexOf(callback), 1);
+          callback(self.state[task] && self.state[task].count > 0, off);
+          return off;
+        },
+        once: function (callback, task) {
+          self.api.register(function (busy, off) {
+            if (!busy) {
+              off();
+              callback();
             }
-          };
+          }, task);
         },
         busy: function (task, detach) {
           task = task ? task : 'global';
-          detach = detach ? true : false;
-          if ((state[task] && (state[task].count > 0) || task === 'global') && state[task].detached !== detach) {
-            throw 'Unable to alter detachment status of ongoing task \'' + task + '\', was previously \'' + (state[task].detached ? 'detached' : 'attached') + '\'.';
+          detach = !!detach;
+          if ((self.state[task] && (self.state[task].count > 0) || task === 'global') && self.state[task].detached !== detach) {
+            throw 'Unable to alter detachment status of ongoing task \'' + task + '\', was previously \'' + (self.state[task].detached ? 'detached' : 'attached') + '\'.';
           }
 
           if (task && task !== 'global') {
-            if (!state[task]) {
-              state[task] = { count: 0 };
+            if (!self.state[task]) {
+              self.state[task] = { count: 0 };
             }
 
-            state[task].detached = detach;
+            self.state[task].detached = detach;
 
-            if (1 === (state[task].count += 1)) {
-              notify(task);
+            if (1 === (self.state[task].count += 1)) {
+              self.notify(task);
             }
           }
 
-          if (!state[task].detached && 1 === (state.global.count = state.global.count + 1)) {
-            notify('global');
+          if (!self.state[task].detached && 1 === (self.state.global.count = self.state.global.count + 1)) {
+            self.notify('global');
           }
         },
         done: function (task) {
           task = task ? task : 'global';
-          if (!state[task]) {
+          if (!self.state[task]) {
             return;
           }
 
           if (task && task !== 'global') {
-            if (!(state[task].count = state[task].count ? state[task].count - 1 : 0)) {
-              notify(task);
+            if (!(self.state[task].count = self.state[task].count ? self.state[task].count - 1 : 0)) {
+              self.notify(task);
             }
           }
 
-          if (!state[task].detached && !(state.global.count = state.global.count ? state.global.count - 1 : 0)) {
-            notify('global');
+          if (!self.state[task].detached && !(self.state.global.count = self.state.global.count ? self.state.global.count - 1 : 0)) {
+            self.notify('global');
           }
         },
         check: function (task) {
           task = task ? task : 'global';
-          return state[task] ? state[task].count : 0;
+          return self.state[task] ? self.state[task].count : 0;
         }
       };
     })
